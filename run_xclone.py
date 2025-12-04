@@ -50,7 +50,7 @@ def run_xclone(adata:ad.AnnData = None, tag:str = None, annot_key:str = "cluster
     path_out_data = path_out / "data"
     path_data = [p for p in path_out_data.glob("*.h5ad")][0]
     adata = sc.read_h5ad(path_data)
-    df_out = pd.DataFrame(adata.X.todense(), index=list(adata.obs.index), columns=list(adata.var.index)).T.astype(int)
+    df_out = pd.DataFrame(adata.layers["WMA_smoothed_log_ratio_ab"], index=list(adata.obs.index), columns=list(adata.var.index)).T.astype(int)
     var_select = adata.var[["chr", "start", "stop"]].rename({"chr":"CHR", "start":"START", "stop":"END"}, axis=1)
     var_select["CHR"] = var_select["CHR"].apply(lambda x: f"chr{x}")
     df_concat = pd.concat([var_select, df_out], axis=1).set_index("CHR")
