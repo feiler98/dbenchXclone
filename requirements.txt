@@ -1,0 +1,7 @@
+xclone
+pandas
+numpy
+scipy
+anndata
+scanpy
+openpyxl
