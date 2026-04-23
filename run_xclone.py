@@ -49,7 +49,7 @@ def get_hg_38_desc_paths(target_path: Path) -> dict:
     """
     These fetched .txt files correlate to .csv RCM files --> describe normal cells within the datasets.
     """
-    return {p.stem: p for p in target_path.rglob("*__hg_*.txt")}
+    return {p.stem: p for p in target_path.rglob("*__hg_38.txt")}
 
 
 def csvs_to_adatas(target_path: Path) -> dict:
