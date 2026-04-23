@@ -6,6 +6,9 @@ from pathlib import Path
 import time
 import pandas as pd
 from configparser import ConfigParser
+import logging
+import numpy as np
+import gtfparse
 
 
 def get_project_dir(cwd: Path, parent_path_str: str) -> Path:
@@ -250,3 +253,114 @@ t-diff     | {t_diff} s
             return target_func
         return wrapper
     return time_wrapper
+
+
+# taken from infercnvpy --> shoutout to their clean work
+def genomic_position_from_gtf(
+    gtf_file: Path,
+    adata = None,
+    *,
+    gtf_gene_id = "gene_name",
+    adata_gene_id = None):
+    """
+    Get genomic gene positions from a GTF file.
+
+    The GTF file needs to match the genome annotation used for your single cell dataset.
+    Modified to change always inplace
+
+    .. warning::
+        Currently only tested with GENCODE GTFs.
+
+    Parameters
+    ----------
+    gtf_file
+        Path to the GTF file
+    adata
+        Adds the genomic positions to `adata.var`. If adata is None, returns
+        a data frame with the genomic positions instead.
+    gtf_gene_id
+        Use this GTF column to match it to anndata
+    adata_gene_id
+        Match this column to the gene ids from the GTF file. Default: use
+        adata.var_names.
+    """
+    try:
+        import gtfparse
+    except ImportError:
+        raise ImportError(
+            "genomic_position_from_gtf requires gtfparse as optional dependency. Please install it using `pip install gtfparse`."
+        ) from None
+    gtf = gtfparse.read_gtf(
+        gtf_file, usecols=["seqname", "feature", "start", "end", "gene_id", "gene_name"]
+    ).to_pandas()
+    gtf = (
+        gtf.loc[
+            gtf["feature"] == "gene",
+            ["seqname", "start", "end", "gene_id", "gene_name"],
+        ]
+        .drop_duplicates()
+        .rename(columns={"seqname": "chromosome"})
+    )
+    # remove ensembl versions
+    gtf["gene_id"] = gtf["gene_id"].str.replace(r"\.\d+$", "", regex=True)
+
+    gene_ids_adata = (adata.var_names if adata_gene_id is None else adata.var[adata_gene_id]).values
+    gtf = gtf.loc[gtf[gtf_gene_id].isin(gene_ids_adata), :]
+
+    missing_from_gtf = len(set(gene_ids_adata) - set(gtf[gtf_gene_id].values))
+    if missing_from_gtf:
+        logging.warning(f"GTF file misses annotation for {missing_from_gtf} genes in adata.")
+
+    duplicated_symbols = np.sum(gtf["gene_name"].duplicated())
+    if duplicated_symbols:
+        logging.warning(f"Skipped {duplicated_symbols} genes because of duplicate identifiers in GTF file.")
+        gtf = gtf.loc[~gtf[gtf_gene_id].duplicated(keep=False), :]
+
+    tmp_var = adata.var.copy()
+    orig_index_name = tmp_var.index.name
+    TMP_INDEX_NAME = "adata_var_index"
+    tmp_var.index.name = TMP_INDEX_NAME
+    tmp_var.reset_index(inplace=True)
+    var_annotated = tmp_var.merge(
+        gtf,
+        how="left",
+        left_on=TMP_INDEX_NAME if adata_gene_id is None else adata_gene_id,
+        right_on=gtf_gene_id,
+        validate="one_to_one",
+    )
+    var_annotated.set_index(TMP_INDEX_NAME, inplace=True)
+    var_annotated.index.name = orig_index_name
+    var_annotated.rename({'chromosome':"chr", 'end':"stop", 'gene_id':"GeneID", 'gene_name':"GeneName"}, axis=1, inplace=True)
+    var_annotated["chr"] = var_annotated["chr"].map(lambda x : str(x).replace("chr", ""))
+    dict_chr_arm_bp = {
+        "1": 123400000,
+        "2": 93900000,
+        "3": 90900000,
+        "4": 50000000,
+        "5": 48800000,
+        "6": 59800000,
+        "7": 60100000,
+        "8": 45200000,
+        "9": 43000000,
+        "10": 39800000,
+        "11": 53400000,
+        "12": 35500000,
+        "13": 17700000,
+        "14": 17200000,
+        "15": 19000000,
+        "16": 36800000,
+        "17": 25100000,
+        "18": 18500000,
+        "19": 26200000,
+        "20": 28100000,
+        "21": 12000000,
+        "22": 15000000,
+        "X": 61000000,
+        "Y": 10400000,
+    }
+
+    var_annotated["chr_arm"] = var_annotated.index.map(lambda x : f"{var_annotated.loc[x, 'chr']}{'p' if dict_chr_arm_bp[var_annotated.loc[x, 'chr']] > var_annotated.loc[x, 'stop'] else 'q'}" if var_annotated.loc[x, 'chr'] in dict_chr_arm_bp.keys() else np.nan)
+
+    adata.var = var_annotated
+    list_var_na_dropped = list(var_annotated.dropna(how="any").index)
+    return adata[:, list_var_na_dropped]

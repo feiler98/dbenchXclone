@@ -14,10 +14,10 @@
 # ----------------------------------------------------------------------------------------------------------------------
 import xclone
 from pathlib import Path
-import anndata as ad
-from utility import benchmark_method
+from utility import benchmark_method, genomic_position_from_gtf
 import pandas as pd
 import scanpy as sc
+from scipy import sparse
 import itertools
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -66,6 +66,10 @@ def csvs_to_adatas(target_path: Path) -> dict:
             with open(path_txt, "r") as f:
                 list_norm_cells = list(map(lambda x: x.replace("\n", ""), f.readlines()))
             adata.obs["ref_cells"] = ["N" if idx in list_norm_cells else "unknown" for idx in adata.obs.index]
+            adata.X = sparse.csr_matrix(adata.X)
+            adata.layers["raw_expr"] = adata.X
+            # add most of the information & chr_arm as it is required
+            adata = genomic_position_from_gtf(Path("gencode.v38.annotation.gtf"), adata)
             dict_accepted_files[k] = adata
     return dict_accepted_files
 
@@ -98,12 +102,12 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
 
     dict_files = csvs_to_adatas(path_target)
     for tag_dataset, adata in dict_files.items():
-        str_kwargs = ";".join([f"{x},{y}" for x, y in kwargs.items()])
+        str_kwargs = ";".join([f"{list(x)[0]},{y}" for x, y in kwargs.items()])
         file_name = f"{tag_dataset}__{str_kwargs}__Xclone_RDR"
 
         path_out = path_out_data / file_name
         path_out.mkdir(exist_ok=True, parents=True)
-
+        print(adata.var)
         @benchmark_method(str(path_out))
         def run_rdr_xclone(adata, file_name, kwargs):
             rdrconfig = xclone.XCloneConfig(dataset_name = file_name, module = "RDR")
@@ -188,6 +192,6 @@ if __name__ == "__main__":
     path_in, path_out = val_build_project()
     run_xclone(path_in, path_out)  # standard params
     list_kwargs = grid_by_dict(kwargs_gridsearch)
-    #for kwarg_opt in list_kwargs:
-        #print(f"InferCNVpy running with hyperparameters: {kwarg_opt}")
-        #run_xclone(path_in, path_out, kwargs=kwarg_opt)
+    for kwarg_opt in list_kwargs:
+        print(f"InferCNVpy running with hyperparameters: {kwarg_opt}")
+        run_xclone(path_in, path_out, kwargs=kwarg_opt)
