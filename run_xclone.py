@@ -116,7 +116,6 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
 
     dict_files = csvs_to_adatas(path_target)
     for tag_dataset, adata in dict_files.items():
-        str_kwargs = ";".join([f"{list(x)[0]},{y}" for x, y in kwargs.items()])
         file_name = f"{tag_dataset}__{random_sequence(len_seq=8)}__Xclone_RDR"
 
         path_out = path_out_data / file_name
