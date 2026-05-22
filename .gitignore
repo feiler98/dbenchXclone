@@ -1,6 +1,6 @@
 .idea
-data
+app
 XClone.log
 data_input
 gencode.v38.annotation.gtf
-app
+run_local.py
