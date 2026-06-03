@@ -83,7 +83,7 @@ def csvs_to_adatas(target_path: Path) -> dict:
             adata.X = sparse.csr_matrix(adata.X)
             adata.layers["raw_expr"] = adata.X
             # add most of the information & chr_arm as it is required
-            adata = genomic_position_from_gtf(Path("gencode.v38.annotation.gtf"), adata)
+            adata = genomic_position_from_gtf(Path(__file__).parent / "gencode.v38.annotation.gtf", adata)
             dict_accepted_files[k] = adata
     return dict_accepted_files
 
