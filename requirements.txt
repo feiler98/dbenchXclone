@@ -6,3 +6,4 @@ anndata
 scanpy
 infercnvpy
 gtfparse
+openpyxl
