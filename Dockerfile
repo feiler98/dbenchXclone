@@ -5,4 +5,4 @@ WORKDIR /scratch/tmp/feiler/dbenchXclone
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
-CMD ["python3", "/scratch/tmp/feiler/dbenchXclonerun_xclone.py"]
+CMD ["python3", "/scratch/tmp/feiler/dbenchXclone/run_xclone.py"]
