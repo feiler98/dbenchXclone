@@ -185,20 +185,20 @@ if __name__ == "__main__":
 
     kwargs_gridsearch = {
         "smart_transform": [True, False],
-        "filter_ref_ave": [0.2, 0.5, 1.0],
+        "filter_ref_ave": [0.5],
         "min_gene_keep_num": [1000, 3000, 10000, 20000],
         "multi_refcelltype": [True, False],
-        "get_marker_genes": [True, False],
+        "get_marker_genes": [True],
         "top_n_marker": [5, 15, 50],
-        "remove_marker": [True, False],
+        "remove_marker": [True],
         "fit_GLM_libratio": [True, False],
-        "select_normal_chr_num": [1, 4, 10],
+        "select_normal_chr_num": [4],
         "WMA_window_size": [20, 40, 100],
-        "ab_k_neighbors": [3, 10, 30],
-        "ab_pseudo_count": [1e-8, 1e-6, 1e-4],
-        "denoise_sd_amplifier": [1.0, 1.5, 2, 4],
-        "low_rank": [True, False],
-        "low_rank_n_components": [5, 10, 20]
+        "ab_k_neighbors": [5, 10, 20],
+        "ab_pseudo_count": [1e-6],
+        "denoise_sd_amplifier": [1.5],
+        "low_rank": [False],
+        "low_rank_n_components": [10]
     }
 
     path_in, path_out = val_build_project()
