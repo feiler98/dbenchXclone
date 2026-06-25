@@ -158,19 +158,21 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
             # apply config to the RDR model
             # -----------------------------
             xclone.model.run_RDR(adata, config_file = rdrconfig)
+        try:
+            # run model
+            run_rdr_xclone(adata, file_name, kwargs)
 
-        # run model
-        run_rdr_xclone(adata, file_name, kwargs)
-
-        # fetch and transform h5ad to csv standard format
-        path_out_data = path_out / "data"
-        path_data = [p for p in path_out_data.glob("*.h5ad")][0]
-        adata = sc.read_h5ad(path_data)
-        df_out = pd.DataFrame(adata.layers["WMA_smoothed_log_ratio_ab"], index=list(adata.obs.index), columns=list(adata.var.index)).T.astype(int)
-        var_select = adata.var[["chr", "start", "stop"]].rename({"chr":"CHR", "start":"START", "stop":"END"}, axis=1)
-        var_select["CHR"] = var_select["CHR"].apply(lambda x: f"chr{x}")
-        df_concat = pd.concat([var_select, df_out], axis=1).set_index("CHR")
-        df_concat.to_csv(path_out / f"{file_name}__pred.csv")
+            # fetch and transform h5ad to csv standard format
+            path_out_data = path_out / "data"
+            path_data = [p for p in path_out_data.glob("*.h5ad")][0]
+            adata = sc.read_h5ad(path_data)
+            df_out = pd.DataFrame(adata.layers["WMA_smoothed_log_ratio_ab"], index=list(adata.obs.index), columns=list(adata.var.index)).T.astype(int)
+            var_select = adata.var[["chr", "start", "stop"]].rename({"chr":"CHR", "start":"START", "stop":"END"}, axis=1)
+            var_select["CHR"] = var_select["CHR"].apply(lambda x: f"chr{x}")
+            df_concat = pd.concat([var_select, df_out], axis=1).set_index("CHR")
+            df_concat.to_csv(path_out / f"{file_name}__pred.csv")
+        except:
+            pass
 
 
 if __name__ == "__main__":
