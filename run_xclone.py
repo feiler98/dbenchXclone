@@ -185,25 +185,26 @@ if __name__ == "__main__":
 
     kwargs_gridsearch = {
         "smart_transform": [True, False],
-        "filter_ref_ave": [0.5],
+        "filter_ref_ave": [0.2, 0.5, 0.8],
         "min_gene_keep_num": [1000, 3000, 10000, 20000],
         "multi_refcelltype": [True, False],
-        "get_marker_genes": [True],
+        "get_marker_genes": [True, False],
         "top_n_marker": [5, 15, 50],
-        "remove_marker": [True],
+        "remove_marker": [True, False],
         "fit_GLM_libratio": [True, False],
-        "select_normal_chr_num": [4],
+        "select_normal_chr_num": [2, 4, 8],
         "WMA_window_size": [20, 40, 100],
         "ab_k_neighbors": [5, 10, 20],
         "ab_pseudo_count": [1e-6],
-        "denoise_sd_amplifier": [1.5],
-        "low_rank": [False],
-        "low_rank_n_components": [10]
+        "denoise_sd_amplifier": [1, 1.5, 2],
+        "low_rank": [False, True],
+        "low_rank_n_components": [5, 10, 20, 50]
     }
 
     path_in, path_out = val_build_project()
     run_xclone(path_in, path_out)  # standard params
     list_kwargs = grid_by_dict(kwargs_gridsearch)
+    list_kwargs = random.sample(list_kwargs, 1000)
     for kwarg_opt in list_kwargs:
         print(f"InferCNVpy running with hyperparameters: {kwarg_opt}")
         run_xclone(path_in, path_out, kwargs=kwarg_opt)
