@@ -63,7 +63,7 @@ def get_hg_38_desc_paths(target_path: Path) -> dict:
     """
     These fetched .txt files correlate to .csv RCM files --> describe normal cells within the datasets.
     """
-    return {p.stem: p for p in target_path.rglob("*__hg_38.txt")}
+    return {p.stem: p for p in target_path.rglob("*__hg_38__describe.csv")}
 
 
 def csvs_to_adatas(target_path: Path) -> dict:
@@ -72,14 +72,12 @@ def csvs_to_adatas(target_path: Path) -> dict:
     """
     dict_hg38_desc = get_hg_38_desc_paths(target_path)
     dict_accepted_files = {}
-    for k, path_txt in dict_hg38_desc.items():
-        path_rcm = Path(target_path) / f"{k}__RCM.csv"
+    for k, path_desc in dict_hg38_desc.items():
+        path_rcm = Path(target_path) / f"{k.replace('__describe', '')}__RCM.csv"
         if path_rcm.exists():
             adata = sc.read_csv(path_rcm).T
-            adata.obs["cell_names"] = adata.obs.index
-            with open(path_txt, "r") as f:
-                list_norm_cells = list(map(lambda x: x.replace("\n", ""), f.readlines()))
-            adata.obs["ref_cells"] = ["N" if idx in list_norm_cells else "unknown" for idx in adata.obs.index]
+            obs_desc_df = pd.read_csv(path_desc, index_col="cell_id").loc[list(adata.obs.index),:]
+            adata.obs = obs_desc_df
             adata.X = sparse.csr_matrix(adata.X)
             adata.layers["raw_expr"] = adata.X
             # add most of the information & chr_arm as it is required
@@ -127,9 +125,9 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
             # base settings based on the tutorial
             rdrconfig.set_figure_params(xclone= True, fontsize = 18)
             rdrconfig.outdir = path_out_data / file_name
-            rdrconfig.cell_anno_key = "ref_cells"  # obs column with annotation key
-            rdrconfig.ref_celltype = "N"
-            rdrconfig.marker_group_anno_key = "ref_cells"
+            rdrconfig.cell_anno_key = "cell_category"  # obs column with annotation key
+            rdrconfig.ref_celltype = "Normal"
+            rdrconfig.marker_group_anno_key = "cell_category"
             rdrconfig.xclone_plot= True
 
             # advanced settings
