@@ -80,8 +80,6 @@ def csvs_to_adatas(target_path: Path) -> dict:
             adata.obs = obs_desc_df
             adata.X = sparse.csr_matrix(adata.X)
             adata.layers["raw_expr"] = adata.X
-            # add most of the information & chr_arm as it is required
-            adata = genomic_position_from_gtf(Path(__file__).parent / "gencode.v38.annotation.gtf", adata)
             dict_accepted_files[k.replace('__describe', '')] = adata
     return dict_accepted_files
 
@@ -120,6 +118,8 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
         path_out.mkdir(exist_ok=True, parents=True)
         @benchmark_method(str(path_out))
         def run_rdr_xclone(adata, file_name, kwargs):
+            # add most of the information & chr_arm as it is required
+            adata = genomic_position_from_gtf(Path(__file__).parent / "gencode.v38.annotation.gtf", adata)
             rdrconfig = xclone.XCloneConfig(dataset_name = file_name, module = "RDR")
 
             # base settings based on the tutorial
