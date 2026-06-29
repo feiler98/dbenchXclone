@@ -155,6 +155,8 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
 
             # apply config to the RDR model
             # -----------------------------
+            # line 292 --> posterior_mtx in layers is the final output (RDR_adata.layers['posterior_mtx'] = RDR_adata.layers[layer_name])
+            # log_ratio_ab is for smooth visualization! Not normalized between -1 1!
             xclone.model.run_RDR(adata, config_file = rdrconfig)
         try:
             # run model
@@ -164,7 +166,10 @@ def run_xclone(path_target: Path, path_out_data: Path, kwargs: dict = {}):
             path_out_data = path_out / "data"
             path_data = [p for p in path_out_data.glob("*.h5ad")][0]
             adata = sc.read_h5ad(path_data)
-            df_out = pd.DataFrame(adata.layers["WMA_smoothed_log_ratio_ab"], index=list(adata.obs.index), columns=list(adata.var.index)).T.astype(int)
+            list_normal_cells = list(adata.obs.where(adata.obs["cell_category"]=="Normal").dropna().index)
+            with open(path_out/f"{file_name}__normal_cells.txt", "w") as f:
+                f.write("\n".join(list_normal_cells))
+            df_out = pd.DataFrame(adata.layers["log_ratio_ab"], index=list(adata.obs.index), columns=list(adata.var.index)).T
             var_select = adata.var[["chr", "start", "stop"]].rename({"chr":"CHR", "start":"START", "stop":"END"}, axis=1)
             var_select["CHR"] = var_select["CHR"].apply(lambda x: f"chr{x}")
             df_concat = pd.concat([var_select, df_out], axis=1).set_index("CHR")
