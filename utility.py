@@ -36,7 +36,6 @@ def get_project_dir(cwd: Path, parent_path_str: str) -> Path:
         return cwd
 
 
-
 class GetConfig:
     """
     Class handling configuration-file [.ini] setup.
